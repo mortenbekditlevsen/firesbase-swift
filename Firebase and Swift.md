@@ -21,7 +21,7 @@ Perhaps some still remember, that if you used a snake case `keyEncodingStrategy`
 
 For instance if you had an entity:
 
-```
+```swift
 struct User: Codable {
   var name: String
   var chatRooms: [String: ChatRoom]
@@ -31,7 +31,7 @@ Where the `chatRooms` is a `Dictionary` from some internal, perhaps randomly gen
 
 Then if you encoded that as follows:
 
-```
+```swift
 let user = User(name: "Morten", chatRooms: ["xX3mc_axkK": ChatRoom(...)])
 let encoder = JSONEncoder()
 encoder.keyEncodingStrategy = .convertToSnakeCase
@@ -98,7 +98,7 @@ The issue is that not all encoding and decoding of keys roundtrip successfully w
 
 The standard example of this is:
 
-```
+```swift
 struct User: Codable {
    var name: String
    var imageURL: URL?
@@ -109,7 +109,7 @@ Encoding `imageURL` with snake case key conversion gives `image_url`, but decodi
 
 This leads developers to include standard workarounds for capitalized abbreviations like:
 
-```
+```swift
 struct User: Codable {
     enum CodingKeys: String, CodingKey {
         case name
@@ -127,7 +127,7 @@ There is an extremely elegant solution to the issue by a contributer named Norio
 
 For instance in this custom decodable implementation:
 
-```
+```swift
 ...
 public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -156,7 +156,7 @@ Well, it doesn't actually work - it has the same issues of not all attributes ro
 
 Is the `allKeys` API to blame?
 
-I think it is. I think that _if_ you require to encode and decode keys that you do not 'own' or cannot know up front, then you should encode them as _Data_ rather than keys that can be transformed. A situation very similar to the issue with the initial `Codable` implementation described above. // XXX TODO LINK
+I think it is. I think that _if_ you require to encode and decode keys that you do not 'own' or cannot know up front, then you should encode them as _Data_ rather than keys that can be transformed. A situation very similar to the issue with the initial `Codable` implementation described above. [Swift / `Codable`: Leave `Dictionary` keys alone](#previous-work)
 
 IF you want to encode keys as data untouched by key coding strategies, you can already do this by encoding a `Dictionary` from key to value. And upon decoding - again decode a `Dictionary` in which your keys will be the raw, untouched `Strings` that you originally encoded.
 
@@ -181,14 +181,14 @@ I've written about this a loong time ago. Please don't use any of the references
 
 Rather than today's:
 
-```
+```swift
 let ref = root.child("accounts/\(accountId)/products/\(productId)")
 let snapshot = try await ref.get()
 let product = try snapshot.data(as: Product.self)
 ```
 Imagine that you could just do:
 
-```
+```swift
 let path = Path().accounts(accountId).products(productId)
 let product = try await db.get(path)
 ```
@@ -225,7 +225,7 @@ Notice that you cannot yet instantiate a `Path` outside of the file containing t
 
 You can add an initializer to a `Root` component using constrained extensions:
 
-```
+```swift
 enum Root {}
 extension Path where Element == Root {
   init() {
@@ -235,7 +235,7 @@ extension Path where Element == Root {
 ``` 
 Now `Path()` will give you a `Path<Root>`. But we don't actually have an entity called `Root` - it's just a 'phantom generic' that we use to create more constrained extensions:
 
-```
+```swift
 enum Account {}
 
 extension Path where Element == Root {
@@ -246,7 +246,7 @@ extension Path where Element == Root {
 ```
 And now you can finally add a `Path` to an actual `Codable` entity:
 
-```
+```swift
 struct Product: Codable {
   var name: String
   var price: Decimal
@@ -261,7 +261,7 @@ extension Path where Element == Account {
 
 The final piece of the puzzle is to add an extension to your database or some other type to fetch the data:
 
-```
+```swift
 extension Database {
 	func get<T>(_ path: Path<T>) async throws -> T where T: Decodable {
 		let ref = rootRef.child(path.rendered)
@@ -301,7 +301,7 @@ This would mean that you could use async for loops to access your data. It's not
 
 Using it might look something like:
 
-```
+```swift
 for try await user in ref.observe(as: User.self) {
   // will be called every time the user stored at the ref changes.
 } 
@@ -322,7 +322,7 @@ Using constrained extensions on the generic you can then enforce that a specific
 
 The `Predicate` type could look something like this:
 
-```
+```swift
 protocol QueryApplication {}
 enum Applied: QueryApplication {}
 enum NotApplied: QueryApplication {}
@@ -347,7 +347,7 @@ OrderBy: QueryApplication {
 ```
 In the above, the `QueryPredicate` type is an enumeration containing each of the predicate building blocks:
 
-```
+```swift
 enum QueryPredicate {
   case isEqualTo(_ field: String, _ value: Any)
   case isNotEqualTo(_ field: String, _ value: Any)
@@ -373,7 +373,7 @@ enum QueryPredicate {
 
 And an example of a constrained extension that allows an inequality filter in case one was not already applied:
 
-```
+```swift
 extension Predicate where Inequality == NotApplied, OrderBy == NotApplied {
     func isLessThan(_ field: String, _ value: Any) -> Predicate<ArrayContains, InAndFriends, Applied, OrderBy> {
         .init(predicates: self.predicates + [.isLessThan(field, value)], inequalityField: field)
@@ -382,7 +382,7 @@ extension Predicate where Inequality == NotApplied, OrderBy == NotApplied {
 ```
 You can also model the fact that it is ok to have more inequality predicates as long as it's on the same field - by adding overloads that don't take a 'field' parameter and only adds a further inequality predicate:
 
-```
+```swift
 extension Predicate where Inequality == Applied, OrderBy == NotApplied {
     func andGreaterThan(_ value: Any) -> Predicate<ArrayContains, InAndFriends, Applied, OrderBy> {
         .init(predicates: self.predicates + [.isGreaterThan(inequalityField!, value)], inequalityField: inequalityField!)
@@ -394,7 +394,7 @@ The only downside I have found with this approach is that one cannot fully hide 
 
 Building a type system proven valid query can then look something like this:
 
-```
+```swift
 let a = Predicate.isEqualTo("state", "CA")
         .isNotIn("population", [23, 24])
         .andLessThan(4)

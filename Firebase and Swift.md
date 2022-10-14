@@ -156,7 +156,7 @@ Well, it doesn't actually work - it has the same issues of not all attributes ro
 
 Is the `allKeys` API to blame?
 
-I think it is. I think that _if_ you require to encode and decode keys that you do not 'own' or cannot know up front, then you should encode them as _Data_ rather than keys that can be transformed. A situation very similar to the issue with the initial `Codable` implementation described above. [Swift / `Codable`: Leave `Dictionary` keys alone](#previous-work)
+I think it is. I think that _if_ you require to encode and decode keys that you do not 'own' or cannot know up front, then you should encode them as _Data_ rather than keys that can be transformed. A situation very similar to the issue with the initial `Codable` implementation described above. [Swift / `Codable`: Leave `Dictionary` keys alone](#swift--codable-leave-dictionary-keys-alone)
 
 IF you want to encode keys as data untouched by key coding strategies, you can already do this by encoding a `Dictionary` from key to value. And upon decoding - again decode a `Dictionary` in which your keys will be the raw, untouched `Strings` that you originally encoded.
 
